@@ -2,7 +2,7 @@
   <v-card>
     <v-toolbar color="primary">
 
-      <v-toolbar-title>{{ tab }}</v-toolbar-title>
+      <v-toolbar-title>{{ tab }} </v-toolbar-title>
 
       <v-spacer></v-spacer>
 
@@ -38,13 +38,37 @@
         </v-card>
       </v-window-item>
     </v-window>
+    <v-dialog
+      v-model="isIncommingCall"
+
+      :contained="true"
+
+      :fullscreen="true"
+
+      width="100%"
+
+    >
+      <v-card class="salign-content-space-between">
+        <IncomingCall/>
+<!--        <Call/>-->
+      </v-card>
+
+    </v-dialog>
+    <audio id="audioPlayer" preload="auto" controls></audio>
   </v-card>
 </template>
 
 <script setup lang="ts">
 import {defineAsyncComponent, ref} from "vue";
-
+import HelloWorld from "@/components/HelloWorld.vue";
+import Call from "@/view/Call.vue";
+import IncomingCall from "@/view/IncomingCall"
+import {useSipStore} from "@/store/app";
+import {storeToRefs} from "pinia";
+const sipStore=useSipStore()
 const tab = ref(null);
+const dialog = ref(false);
+const {isIncommingCall}=storeToRefs(sipStore);
 
 const items = [
   { name: "Контакты", icon: "mdi-contacts", component: defineAsyncComponent(() => import("../view/Contacts.vue")) },

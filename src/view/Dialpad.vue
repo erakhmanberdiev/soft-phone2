@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import {inject, ref} from "vue";
+import Call from "@/view/Call"
+import {useSipStore} from "@/store/app";
+import {RTCSession, RTCSessionEventMap} from "jssip/lib/RTCSession";
+import {UA} from "jssip";
+import {CallOptions} from "jssip/lib/UA";
 
+const sipStore = useSipStore();
+
+const session = ref<RTCSession | null>(null);
 const keyboard=[
     [
       {"number":"1","alpha":""},
@@ -23,6 +31,7 @@ const keyboard=[
     {"number":"#","alpha":""},
   ],
 ];
+
 const emit=defineEmits(["closeDial"])
 const closeDialpad=()=>{
     emit("closeDial");
@@ -36,12 +45,31 @@ const clearLastDigit = () => {
 const pressKey = (key:string) => {
   phoneNumber.value += key;
 };
+const makeCall=()=>{
+  sipStore.makeCall(phoneNumber.value);
+};
 const dialog=ref(false);
 </script>
 
 <template>
-  <div>
 
+  <div>
+    <v-dialog
+      v-model="dialog"
+
+      :contained="true"
+
+      :fullscreen="true"
+
+      width="100%"
+
+    >
+      <v-card class="salign-content-space-between">
+        <!--        <IncomingCall/>-->
+        <Call/>
+      </v-card>
+
+    </v-dialog>
     <v-text-field
       class="pa-1"
       v-model="phoneNumber"
@@ -69,23 +97,11 @@ const dialog=ref(false);
       />
       <v-btn
           icon="mdi-phone"
-
+          @click="makeCall"
           class="pa-0 ma-0 rounded-circle bg-green"
+
       >
-        <v-dialog
-            v-model="dialog"
-            activator="parent"
-            width="auto"
-        >
-          <v-card>
-            <v-card-text>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            </v-card-text>
-            <v-card-actions>
-              <v-btn color="primary" block @click="dialog = false">Close Dialog</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+
       </v-btn>
       <v-btn
           icon="mdi-contacts"

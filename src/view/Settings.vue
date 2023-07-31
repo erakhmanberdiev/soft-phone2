@@ -1,7 +1,9 @@
 <script setup lang="ts">
 
 import {computed, ref} from "vue";
+import {useSipStore} from "@/store/app";
 
+const sipStore = useSipStore();
 const serverUrl = ref(localStorage.getItem('serverUrl') || '');
 const username = ref(localStorage.getItem('username') || '');
 const password = ref(localStorage.getItem('password') || '');
@@ -9,7 +11,7 @@ const password = ref(localStorage.getItem('password') || '');
 const regStatus = computed((e) => {
   try{
     // console.log(sipStore.getRegStatus)
-    // return sipStore.getRegStatus
+    return sipStore.getRegStatus
   }catch(e){
     return "error"
   }
@@ -19,8 +21,8 @@ const submitForm = () => {
   localStorage.setItem('serverUrl', serverUrl.value);
   localStorage.setItem('username', username.value);
   localStorage.setItem('password', password.value);
-
-  // sipStore?.registration(serverUrl.value, username.value, password.value);
+  const audioPlayer = document.getElementById('audioPlayer') as HTMLAudioElement;
+  sipStore?.registration(serverUrl.value, username.value, password.value,audioPlayer);
 
 };
 </script>
