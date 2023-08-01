@@ -1,36 +1,70 @@
 <script lang="ts" setup>
-import {ref} from "vue";
+
+import {Ref, ref, UnwrapRef} from "vue";
 import {useSipStore} from "@/store/app";
+
+interface ButtonIc {
+  icons: string[]; // Массив из двух строк, представляющих две иконки
+  name: string; // Название кнопки
+  function: () => void; // Функция, которая будет выполняться при нажатии на кнопку
+  activeIconIndex: Ref<number>; // Индекс активной иконки (0 или 1)
+}
 
 const sipStore = useSipStore();
 const phoneNumber = ref("0-000-000000");
+const isMute=ref(false)
+const isHold=ref(false);
+const mute=()=>{
+  console.log("Mute!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+      if(!isMute.value){
+        sipStore.mute();
+      }else{
+        sipStore.unmute();
+      }
+      isMute.value=!isMute.value;
+};
+const hold=()=>{
+  console.log("Hold!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+  if(!isHold.value){
+    sipStore.hold();
+  }else{
+    sipStore.unhold();
+  }
+  isHold.value=!isHold.value;
+};
 const hangupCall = () => {
   console.log("HangUp calling!!!!!!!!!")
   sipStore.hangupCall();
 }
-const buttons = [
-  [{
-    "icon": "mdi-volume-high",
-    "name": "pause",
-    "function": () => {
-    },
-  },
+const toggleIcon = (button: ButtonIc) => {
+  console.log(button.icons)
+  button.activeIconIndex.value = (button.activeIconIndex.value + 1) % button.icons.length;
+  button.function();
+};
+const buttons: ButtonIc[3][] = [
+  // Button 1
+  [
     {
-      "icon": "mdi-microphone",
-      "name": "mute",
-      "function": () => {
-      },
+      icons: ["mdi-volume-high", "mdi-head-phones"],
+      name: "speaker",
+      activeIconIndex: ref(0),
+      function: () => {},
     },
     {
-      "icon": "mdi-pause",
-      "name": "pause",
-      "function": () => {
-      },
+      icons: ["mdi-microphone", "mdi-microphone-off"],
+      name: "mute",
+      activeIconIndex: ref(0),
+      function:mute,
+    },
+    {
+      icons: ["mdi-pause", "mdi-play"],
+      name: "hold",
+      activeIconIndex: ref(0),
+      function: hold,
     },
   ],
-
-
-]
+  // Add more button groups if needed...
+];
 </script>
 
 <template>
@@ -51,22 +85,18 @@ const buttons = [
       <v-btn v-for="itemCol in itemRow"
              :key="itemCol.number"
              class="pa-0 ma-0 flex-grow-1 text-none"
-             @click="itemCol.function"
+             @click="toggleIcon(itemCol)"
 
       >
         <div class="justify-center">
           <v-icon
-            :icon="itemCol.icon"
+            :icon="itemCol.icons[itemCol.activeIconIndex.value]"
             :size="25"
             class="text-primary"
           />
           <br>
           <div class="text-primary">{{ itemCol.name }}</div>
         </div>
-
-
-        <!--        {{itemCol.pause}}<br>{{ itemCol.icon }}-->
-
       </v-btn>
     </v-btn-group>
     <v-divider/>

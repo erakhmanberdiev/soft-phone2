@@ -40,19 +40,23 @@
     </v-window>
     <v-dialog
       v-model="isIncommingCall"
-
       :contained="true"
-
       :fullscreen="true"
-
       width="100%"
-
     >
       <v-card class="salign-content-space-between">
         <IncomingCall/>
-<!--        <Call/>-->
       </v-card>
-
+    </v-dialog>
+    <v-dialog
+      v-model="isCalling"
+      :contained="true"
+      :fullscreen="true"
+      width="100%"
+    >
+      <v-card class="salign-content-space-between">
+        <Call/>
+      </v-card>
     </v-dialog>
     <audio id="audioPlayer" preload="auto" controls></audio>
   </v-card>
@@ -68,7 +72,7 @@ import {storeToRefs} from "pinia";
 const sipStore=useSipStore()
 const tab = ref(null);
 const dialog = ref(false);
-const {isIncommingCall}=storeToRefs(sipStore);
+const {isIncommingCall,isCalling}=storeToRefs(sipStore);
 
 const items = [
   { name: "Контакты", icon: "mdi-contacts", component: defineAsyncComponent(() => import("../view/Contacts.vue")) },

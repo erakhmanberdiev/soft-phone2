@@ -1,15 +1,17 @@
 // Utilities
 import {defineStore} from 'pinia'
-import {ref, toRaw} from "vue";
+import {toRaw} from "vue";
 import {UA, WebSocketInterface} from "jssip";
-import {AnswerOptions, RTCSession, RTCSessionEventMap} from "jssip/lib/RTCSession";
-import {CallOptions, IncomingRTCSessionEvent} from "jssip/lib/UA";
+import {Originator, RTCSession, RTCSessionEventMap} from "jssip/lib/RTCSession";
+import {CallOptions} from "jssip/lib/UA";
 
 export const useAppStore = defineStore('app', {
   state: () => ({
     //
   }),
 });
+
+
 export const useSipStore = defineStore('sip', {
   state: () => {
     return {
@@ -17,7 +19,8 @@ export const useSipStore = defineStore('sip', {
       ua: null as UA | null,
       session: null as RTCSession | null,
       regStatus: "error",
-      isIncommingCall:false,
+      isIncommingCall: false,
+      isCalling: false,
     }
   },
   getters: {
@@ -30,14 +33,18 @@ export const useSipStore = defineStore('sip', {
     getRegStatus(): string {
       return toRaw(this.regStatus);
     },
-    getIsIncommingCall():boolean{
+    getIsIncommingCall(): boolean {
       return toRaw(this.isIncommingCall);
+    },
+    getIsCalling() {
+      return toRaw(this.isCalling)
     }
   },
   actions: {
-    setAudioplayer(audioPlayer:HTMLAudioElement){
-      this.audioPlayer=audioPlayer;
+    setAudioplayer(audioPlayer: HTMLAudioElement) {
+      this.audioPlayer = audioPlayer;
     },
+
     setSession(session: RTCSession | null) {
       this.session = session;
     },
@@ -59,45 +66,23 @@ export const useSipStore = defineStore('sip', {
       };
       // console.log(configuration);
       const ua = new UA(configuration);
-      ua?.on("newRTCSession",(event)=>{
-        this.setIsIncommingCall(true);
-        if(event.session.isInProgress()){
-          this.setSession(event.session)
-          const session:RTCSession=event.session;
 
-
-        }
-
-
-      });
-      ua?.on('registered', (e) => this.regStatus = "success");
-      ua?.on('unregistered', (e) => this.regStatus = "error");
-      ua?.on('registrationFailed', (e) => this.regStatus = "warning");
-
+      this.addUaEvents(ua);
       ua.start();
 
       this.ua = ua;
 
 
     },
-    setIsIncommingCall(flg:boolean){
-      this.isIncommingCall=flg;
-    },
-    answerCall(session) {
-      if (session && session.isInProgress()) {
-        // Проверяем, что сессия активна и находится в состоянии "входящего вызова"
 
-        const options = {
-          mediaConstraints: { audio: true, video: false }, // Опционально, задайте требуемые ограничения медиа (здесь только аудио)
-        };
-
-        session.answer(options);
-        console.log("Вы успешно приняли вызов!");
-      } else {
-        console.log("Невозможно принять вызов. Некорректное состояние сессии.");
-      }
+    setIsIncommingCall(flg: boolean) {
+      this.isIncommingCall = flg;
     },
-    makeCall (phoneNumber:string) {
+    setIsCalling(flg: boolean) {
+      this.isCalling = flg;
+    },
+
+    makeCall(phoneNumber: string) {
 
       const userAgent: UA | null = this.userAgent;
 
@@ -118,10 +103,9 @@ export const useSipStore = defineStore('sip', {
           console.log('call ended with cause: ' + e);
         },
         confirmed: (e) => {
-          const audio= toRaw(this.audioPlayer);
-         audio!.srcObject=toRaw(this.session)!.connection.getRemoteStreams()[0];
-         audio!.play();
-
+          const audio = toRaw(this.audioPlayer);
+          audio!.srcObject = toRaw(this.session)!.connection.getRemoteStreams()[0];
+          audio!.play();
 
 
           console.log('call confirmed');
@@ -140,19 +124,87 @@ export const useSipStore = defineStore('sip', {
         userAgent.call(phoneNumber, options)
       );
     },
+
     answer() {
       const session = this.getSession;
       const options = {
-        mediaConstraints: { audio: true, video: false }, // Опционально, задайте требуемые ограничения медиа (здесь только аудио)
+        mediaConstraints: {audio: true, video: false}, // Опционально, задайте требуемые ограничения медиа (здесь только аудио)
       };
       session?.answer(options)
     },
+
     hangupCall() {
       console.log("session.terminate", this.session)
       if (this.session) {
         toRaw(this.session).terminate();
       }
     },
+
+    mute(){
+      const session=this.getSession;
+
+      session?.mute({audio:true,video:true});
+    },
+    unmute(){
+      const session=this.getSession;
+
+      session?.unmute({audio:true,video:false});
+    },
+    hold(){
+      const session=this.getSession;
+      session?.hold();
+    },
+    unhold(){
+      const session=this.getSession;
+      session?.unhold({useUpdate:true});
+    },
+
+    addUaEvents(ua: UA) {
+
+
+      ua.on("newRTCSession", (event) => {
+          this.setSession(event.session)
+          this.addSessionEvents(event.session,event.originator);
+
+      });
+      ua.on('registered', (e) => this.regStatus = "success");
+      ua.on('unregistered', (e) => this.regStatus = "error");
+      ua.on('registrationFailed', (e) => this.regStatus = "warning");
+    },
+    addSessionEvents(session: RTCSession,originator:Originator) {
+
+      if(originator==='local'){
+        this.setIsCalling(true);
+        // session.on("accepted",(event)=>{});
+        // session.on("accepted",(event)=>{});
+        // session.on("accepted",(event)=>{});
+      }
+      if(originator==='remote'){
+        this.setIsIncommingCall(true);
+        session.on("accepted",(event)=>{
+          this.setIsIncommingCall(false);
+          this.setIsCalling(true);
+        });
+        // session.on("accepted",(event)=>{});
+        // session.on("accepted",(event)=>{});
+      }
+      session.on("confirmed",(event)=>{
+        const audio = toRaw(this.audioPlayer);
+        audio!.srcObject = session!.connection.getRemoteStreams()[0];
+        audio!.play();
+      });
+      session.on("ended", () => {
+        this.setIsIncommingCall(false);
+        this.setIsCalling(false);
+      });
+
+      session.on("failed", () => {
+        this.setIsIncommingCall(false);
+        this.setIsCalling(false);
+      });
+
+
+    }
 
   },
 });
